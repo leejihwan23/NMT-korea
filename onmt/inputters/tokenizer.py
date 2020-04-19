@@ -58,7 +58,7 @@ def English_tokenizer(x):
         f.write('\n')
     f.close()
 
-    spm.SentencePieceTrainer.Train('--input=/home/team012/kwak/open-nmt/data/eng.txt \
-                               --model_prefix=/home/team012/kwak/open-nmt/data/english_tok \
+    spm.SentencePieceTrainer.Train('--input=C:/Users/pc/Desktop/산학연계 데이터/eng.txt \
+                               --model_prefix=C:/Users/pc/Desktop/산학연계 데이터/english_tok \
                                --vocab_size=100000\
                                --hard_vocab_limit=false')
