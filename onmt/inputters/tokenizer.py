@@ -33,10 +33,10 @@ def Korean_tokenizer(x):
 
         return result  # 온전한 문장을 반환
 
-    df = pd.read_csv("/home/team012/kwak/open-nmt/data/korean.csv", encoding='cp949', error_bad_lines=False)
+    df = pd.read_csv("C:/Users/pc/Desktop/산학연계 데이터/korean.csv", encoding='cp949', error_bad_lines=False)
     KOR_data = df['Korean']
 
-    f = open("/home/team012/kwak/open-nmt/data/kor_no_josa.txt", "w")
+    f = open("C:/Users/pc/Desktop/산학연계 데이터/kor_no_josa.txt", "w")
     for row in KOR_data[:100000]:
         f.write(remove_josa(row))  # 조사 제거한 문장 저장
         f.write('\n')
@@ -49,10 +49,10 @@ def Korean_tokenizer(x):
 
 
 def English_tokenizer(x):
-    df = pd.read_csv("/home/team012/kwak/open-nmt/data/english.csv", encoding='cp949', error_bad_lines=False)
+    df = pd.read_csv("C:/Users/pc/Desktop/산학연계 데이터/english.csv", encoding='cp949', error_bad_lines=False)
     ENG_data = df['English']
 
-    f = open("/home/team012/kwak/open-nmt/data/eng.txt", "w")
+    f = open("C:/Users/pc/Desktop/산학연계 데이터/eng.txt", "w")
     for row in ENG_data[:100000]:
         f.write(row)
         f.write('\n')
