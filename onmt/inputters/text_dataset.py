@@ -8,10 +8,13 @@ from torchtext.data import Field, RawField
 from onmt.inputters.datareader_base import DataReaderBase
 
 
+import sentencepiece as spm
+import re
+
+
 class TextDataReader(DataReaderBase):
     def read(self, sequences, side, _dir=None):
         """Read text data from disk.
-
         Args:
             sequences (str or Iterable[str]):
                 path to text file or iterable of the actual text data.
@@ -19,7 +22,6 @@ class TextDataReader(DataReaderBase):
                 ``"src"`` or ``"tgt"``.
             _dir (NoneType): Leave as ``None``. This parameter exists to
                 conform with the :func:`DataReaderBase.read()` signature.
-
         Yields:
             dictionaries whose keys are the names of fields and whose
             values are more or less the result of tokenizing with those
@@ -42,11 +44,36 @@ def text_sort_key(ex):
     return len(ex.src[0])
 
 
+def isHangul(text):
+    hanCount = len(re.findall(u'[\u3130-\u318F\uAC00-\uD7A3]+', text))
+    return hanCount > 0
+
+def Korean_tokenizer(x):
+    sp = spm.SentencePieceProcessor()
+    sp.Load('data/korean_tok.model')
+    token = sp.EncodeAsPieces(x)
+    b = []
+    for word in token:
+        c = word.replace("▁", "")
+        if c != '':
+            b.append(c)
+    return b
+
+def English_tokenizer(x):
+    sp = spm.SentencePieceProcessor()
+    sp.Load('data/english_tok.model')
+    token= sp.EncodeAsPieces(x)
+    b = []
+    for word in token:
+        c = word.replace("▁", "")
+        if c != '':
+            b.append(c)
+    return b
+
 # mix this with partial
 def _feature_tokenize(
-        string, layer=0, tok_delim=None, feat_delim=None, truncate=None):
+        string, layer=0, feat_delim=None, truncate=None):
     """Split apart word features (like POS/NER tags) from the tokens.
-
     Args:
         string (str): A string with ``tok_delim`` joining tokens and
             features joined by ``feat_delim``. For example,
@@ -56,12 +83,14 @@ def _feature_tokenize(
             example above, layer 2 is ``'' PLANET``.
         truncate (int or NoneType): Restrict sequences to this length of
             tokens.
-
     Returns:
         List[str] of tokens.
     """
-
-    tokens = string.split(tok_delim)
+    if isHangul(string):
+        tokens=Korean_tokenizer(string)
+    else:
+        tokens=English_tokenizer(string)
+    print("tokens: ",tokens)
     if truncate is not None:
         tokens = tokens[:truncate]
     if feat_delim is not None:
@@ -71,17 +100,14 @@ def _feature_tokenize(
 
 class TextMultiField(RawField):
     """Container for subfields.
-
     Text data might use POS/NER/etc labels in addition to tokens.
     This class associates the "base" :class:`Field` with any subfields.
     It also handles padding the data and stacking it.
-
     Args:
         base_name (str): Name for the base field.
         base_field (Field): The token field.
         feats_fields (Iterable[Tuple[str, Field]]): A list of name-field
             pairs.
-
     Attributes:
         fields (Iterable[Tuple[str, Field]]): A list of name-field pairs.
             The order is defined as the base field first, then
@@ -90,6 +116,7 @@ class TextMultiField(RawField):
 
     def __init__(self, base_name, base_field, feats_fields):
         super(TextMultiField, self).__init__()
+        print("TextMultiField")
         self.fields = [(base_name, base_field)]
         for name, ff in sorted(feats_fields, key=lambda kv: kv[0]):
             self.fields.append((name, ff))
@@ -100,14 +127,12 @@ class TextMultiField(RawField):
 
     def process(self, batch, device=None):
         """Convert outputs of preprocess into Tensors.
-
         Args:
             batch (List[List[List[str]]]): A list of length batch size.
                 Each element is a list of the preprocess results for each
                 field (which are lists of str "words" or feature tags.
             device (torch.device or str): The device on which the tensor(s)
                 are built.
-
         Returns:
             torch.LongTensor or Tuple[LongTensor, LongTensor]:
                 A tensor of shape ``(seq_len, batch_size, len(self.fields))``
@@ -135,10 +160,8 @@ class TextMultiField(RawField):
 
     def preprocess(self, x):
         """Preprocess data.
-
         Args:
             x (str): A sentence string (words joined by whitespace).
-
         Returns:
             List[List[str]]: A list of length ``len(self.fields)`` containing
                 lists of tokens/feature tags for the sentence. The output
@@ -153,7 +176,6 @@ class TextMultiField(RawField):
 
 def text_fields(**kwargs):
     """Create text fields.
-
     Args:
         base_name (str): Name associated with the field.
         n_feats (int): Number of word level feats (not counting the tokens)
@@ -162,11 +184,10 @@ def text_fields(**kwargs):
         bos (str or NoneType, optional): Defaults to ``"<s>"``.
         eos (str or NoneType, optional): Defaults to ``"</s>"``.
         truncate (bool or NoneType, optional): Defaults to ``None``.
-
     Returns:
         TextMultiField
     """
-
+    print("text_fields")
     n_feats = kwargs["n_feats"]
     include_lengths = kwargs["include_lengths"]
     base_name = kwargs["base_name"]
