@@ -21,10 +21,11 @@ from onmt.inputters.inputter import _build_fields_vocab,\
 
 from functools import partial
 from multiprocessing import Pool
-
+from onmt.inputters.MakeToken import korean_token, english_token
 
 def check_existing_pt_files(opt, corpus_type, ids, existing_fields):
     """ Check if there are existing .pt files to avoid overwriting them """
+    print("check_existing_pt_files")
     existing_shards = []
     for maybe_id in ids:
         if maybe_id:
@@ -46,6 +47,7 @@ def check_existing_pt_files(opt, corpus_type, ids, existing_fields):
 
 
 def process_one_shard(corpus_params, params):
+    print("process_one_shard")
     corpus_type, fields, src_reader, tgt_reader, align_reader, opt,\
          existing_fields, src_vocab, tgt_vocab = corpus_params
     i, (src_shard, tgt_shard, align_shard, maybe_id, filter_pred) = params
@@ -59,7 +61,6 @@ def process_one_shard(corpus_params, params):
     align_data = {"reader": align_reader, "data": align_shard, "dir": None}
     _readers, _data, _dir = inputters.Dataset.config(
         [('src', src_data), ('tgt', tgt_data), ('align', align_data)])
-
     dataset = inputters.Dataset(
         fields, readers=_readers, data=_data, dirs=_dir,
         sort_key=inputters.str2sortkey[opt.data_type],
@@ -90,13 +91,12 @@ def process_one_shard(corpus_params, params):
                             and sub_f.sequential and not has_vocab):
                         val = fd
                         sub_sub_counter[sub_n].update(val)
+
     if maybe_id:
         shard_base = corpus_type + "_" + maybe_id
     else:
         shard_base = corpus_type
-    data_path = "{:s}.{:s}.{:d}.pt".\
-        format(opt.save_data, shard_base, i)
-
+    data_path = "{:s}.{:s}.{:d}.pt".format(opt.save_data, shard_base, i)
     logger.info(" * saving %sth %s data shard to %s."
                 % (i, shard_base, data_path))
 
@@ -111,6 +111,7 @@ def process_one_shard(corpus_params, params):
 
 
 def maybe_load_vocab(corpus_type, counters, opt):
+    print("maybe_load_vocab")
     src_vocab = None
     tgt_vocab = None
     existing_fields = None
@@ -133,6 +134,7 @@ def maybe_load_vocab(corpus_type, counters, opt):
 
 def build_save_dataset(corpus_type, fields, src_reader, tgt_reader,
                        align_reader, opt):
+    print("build_save_dataset")
     assert corpus_type in ['train', 'valid']
 
     if corpus_type == 'train':
@@ -160,6 +162,7 @@ def build_save_dataset(corpus_type, fields, src_reader, tgt_reader,
 
     def shard_iterator(srcs, tgts, ids, aligns, existing_shards,
                        existing_fields, corpus_type, opt):
+        print("shard_iterator")
         """
         Builds a single iterator yielding every shard of every corpus.
         """
@@ -196,17 +199,18 @@ def build_save_dataset(corpus_type, fields, src_reader, tgt_reader,
 
     shard_iter = shard_iterator(srcs, tgts, ids, aligns, existing_shards,
                                 existing_fields, corpus_type, opt)
-
+    
     with Pool(opt.num_threads) as p:
         dataset_params = (corpus_type, fields, src_reader, tgt_reader,
                           align_reader, opt, existing_fields,
                           src_vocab, tgt_vocab)
         func = partial(process_one_shard, dataset_params)
+
         for sub_counter in p.imap(func, shard_iter):
             if sub_counter is not None:
                 for key, value in sub_counter.items():
                     counters[key].update(value)
-
+    print("vocab 생성")
     if corpus_type == "train":
         vocab_path = opt.save_data + '.vocab.pt'
         new_fields = _build_fields_vocab(
@@ -234,6 +238,7 @@ def build_save_dataset(corpus_type, fields, src_reader, tgt_reader,
 
 
 def build_save_vocab(train_dataset, fields, opt):
+    print("build_save_vocab")
     fields = inputters.build_vocab(
         train_dataset, fields, opt.data_type, opt.share_vocab,
         opt.src_vocab, opt.src_vocab_size, opt.src_words_min_frequency,
@@ -250,12 +255,14 @@ def count_features(path):
                     ￨-delimited features within the token
     returns: the number of features in the dataset
     """
+    print("count_features")
     with codecs.open(path, "r", "utf-8") as f:
         first_tok = f.readline().split(None, 1)[0]
         return len(first_tok.split(u"￨")) - 1
 
 
 def preprocess(opt):
+    print("preprocess")
     ArgumentParser.validate_preprocess_args(opt)
     torch.manual_seed(opt.seed)
 
@@ -306,8 +313,15 @@ def _get_parser():
 
 def main():
     parser = _get_parser()
-
     opt = parser.parse_args()
+    print("한글 토큰화 시작")
+    #preprocess 처음 실행할 때 실행하기, 그 이외에는 주석
+    #korean_token(opt.train_src[0])
+    print("한글 토큰화 완료")
+    print("영어 토큰화 시작")
+    #preprocess 처음 실행할 때 실행하기, 그 이외에는 주석
+    #english_token(opt.train_tgt[0])
+    print("영어 토큰화 완료")
     preprocess(opt)
 
 

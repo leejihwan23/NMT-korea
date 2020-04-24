@@ -107,7 +107,8 @@ class Translator(object):
             fields,
             src_reader,
             tgt_reader,
-            gpu=-1,
+            gpu=1,#1로 수정
+            #gpu=-1,
             n_best=1,
             min_length=0,
             max_length=100,

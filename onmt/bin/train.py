@@ -7,7 +7,7 @@ import torch
 import onmt.opts as opts
 import onmt.utils.distributed
 
-from onmt.utils.misc import set_random_seed
+#from onmt.utils.misc import set_random_seed
 from onmt.utils.logging import init_logger, logger
 from onmt.train_single import main as single_main
 from onmt.utils.parse import ArgumentParser
@@ -22,7 +22,7 @@ def train(opt):
     ArgumentParser.update_model_opts(opt)
     ArgumentParser.validate_model_opts(opt)
 
-    set_random_seed(opt.seed, False)
+    #set_random_seed(opt.seed, False)
 
     # Load checkpoint if we resume from a previous training.
     if opt.train_from:
@@ -95,7 +95,7 @@ def train(opt):
 
 def batch_producer(generator_to_serve, queues, semaphore, opt):
     init_logger(opt.log_file)
-    set_random_seed(opt.seed, False)
+    #set_random_seed(opt.seed, False)
     # generator_to_serve = iter(generator_to_serve)
 
     def pred(x):
